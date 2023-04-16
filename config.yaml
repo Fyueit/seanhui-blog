@@ -1,0 +1,45 @@
+name: ClientWorker
+catch_rules:
+    - rule: _
+      transform_rules:
+        - search: \#.*
+          replace: ''
+        - search: \?.*
+          replace: '' 
+        - search: _ 
+          replace: 
+          - _
+          - blog.inkdust.top #替換這裡的地址
+          action: fetch
+          fetch:
+            status: 200
+            engine: parallel
+            preflight: false
+            timeout: 5000
+            cache:
+              expire: 1000*60*60*2
+              delay: 200
+        - search: (^4|^5) 
+          searchin: status 
+          action: return
+          return:
+            body: The GateWay is down!
+            status: 503
+
+    - rule: ^https\:\/\/cdnjs\.cloudflare\.com\/ajax\/libs
+      transform_rules:
+        - search: _
+          replace:
+            - _
+            - https://cdnjs.fallsoft.cn/ajax/libs
+            - https://cdn.bootcdn.net/ajax/libs
+            - https://lib.baomitu.com
+            - https://mirrors.cqupt.edu.cn/cdnjs/ajax/libs
+            - https://cdn.staticfile.org
+            - https://mirrors.sustech.edu.cn/cdnjs/ajax/libs
+            - https://cdnjs.sourcegcdn.com/ajax/libs
+          action: fetch
+          fetch:
+            status: 200
+            engine: parallel
+            preflight: false

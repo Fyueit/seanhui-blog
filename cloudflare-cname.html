@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#0078E7"><meta name="author" content="墨尘"><meta name="copyright" content="墨尘"><meta name="generator" content="Hexo 6.2.0"><meta name="theme" content="hexo-theme-yun"><title>Cloudflare官方免费CNAME接入及自选IP教程 | InkDust's Blog</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&amp;display=swap" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/star-markdown-css@0.4.1/dist/yun/yun-markdown.min.css"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/prism-theme-vars/base.css"><script src="https://fastly.jsdelivr.net/npm/scrollreveal/dist/scrollreveal.min.js" defer></script><script>function initScrollReveal() {
+  [".post-card",".markdown-body img"].forEach((target)=> {
+    ScrollReveal().reveal(target);
+  })
+}
+document.addEventListener("DOMContentLoaded", initScrollReveal);
+document.addEventListener("pjax:success", initScrollReveal);
+</script><link rel="icon" type="image/svg+xml" href="/yun.svg"><link rel="mask-icon" href="/yun.svg" color="#0078E7"><link rel="preload" href="/css/hexo-theme-yun.css" as="style"><link rel="prefetch" href="/js/sidebar.js" as="script"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://fastly.jsdelivr.net/npm/" crossorigin><script id="yun-config">
+    window.Yun = {}
+    window.CONFIG = {"hostname":"blog.inkdust.top","root":"/","title":"墨尘的博客","version":"1.10.9","mode":"time","copycode":true,"page":{"isPost":true},"i18n":{"placeholder":"搜索...","empty":"找不到您查询的内容: ${query}","hits":"找到 ${hits} 条结果","hits_time":"找到 ${hits} 条结果（用时 ${time} 毫秒）"},"anonymous_image":"https://cdn.yunyoujun.cn/img/avatar/none.jpg","say":{"api":"https://el-bot-api.vercel.app/api/words/young"},"local_search":{"path":"/search.xml"},"localsearch":{"enable":"ture","trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"fireworks":{"colors":null},"waline":{"config":{"enable":true,"serverURL":"https://comment.inkdust.top/","comment":"ture","el":"#waline","lang":"zh-CN"},"cdn":"https://fastly.jsdelivr.net/npm/@waline/client@v2/dist/waline.js","dark":"html.dark"},"vendors":{"host":"https://fastly.jsdelivr.net/npm/","darken":"https://fastly.jsdelivr.net/npm/darken@1.5.0"}};
+  </script><link rel="stylesheet" href="/css/hexo-theme-yun.css"><script src="/js/hexo-theme-yun.js" type="module"></script><link rel="alternate" href="/rss.xml" title="InkDust's Blog" type="application/rss+xml"><meta name="description" content="自2021年年末后，Cloudflare禁用了使用 API_KEY自定义CNAME接入 Partner的方式，自选节点IP成为了历史。 真的没有办法自选IP了 吗? 当然是有的，而且是Cloudflare官方提供的CNAME接入，即 Cloudflare for SaaS，我们依旧可以通过该方式来自定义IP节点，并且共享页面规则和WAF防火墙规则。 下面开始操作。 准备工作俗话说:“工欲善其事，必">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cloudflare官方免费CNAME接入及自选IP教程">
+<meta property="og:url" content="https://blog.inkdust.top/cloudflare-cname.html">
+<meta property="og:site_name" content="InkDust&#39;s Blog">
+<meta property="og:description" content="自2021年年末后，Cloudflare禁用了使用 API_KEY自定义CNAME接入 Partner的方式，自选节点IP成为了历史。 真的没有办法自选IP了 吗? 当然是有的，而且是Cloudflare官方提供的CNAME接入，即 Cloudflare for SaaS，我们依旧可以通过该方式来自定义IP节点，并且共享页面规则和WAF防火墙规则。 下面开始操作。 准备工作俗话说:“工欲善其事，必">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://alpha-q3.sourcegcdn.com/2022/08/05/4Co7kmYq.jpg">
+<meta property="og:image" content="https://alpha-q3.sourcegcdn.com/2022/08/05/Yd8pDdT3.jpg">
+<meta property="og:image" content="https://alpha-q3.sourcegcdn.com/2022/08/05/cnR6Dxmv.png">
+<meta property="og:image" content="https://alpha-q3.sourcegcdn.com/2022/08/05/OGUDjNmj.jpg">
+<meta property="og:image" content="https://alpha-q3.sourcegcdn.com/2022/08/05/SyTfud4Q.png">
+<meta property="article:published_time" content="2022-08-05T22:31:46.000Z">
+<meta property="article:modified_time" content="2022-08-25T14:54:56.000Z">
+<meta property="article:author" content="墨尘">
+<meta property="article:tag" content="Cloudflare">
+<meta property="article:tag" content="免费CDN">
+<meta property="article:tag" content="CNAME接入">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://alpha-q3.sourcegcdn.com/2022/08/05/4Co7kmYq.jpg"><script>(function() {
+  if (CONFIG.mode !== 'auto') return
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+  const setting = localStorage.getItem('darken-mode') || 'auto'
+  if (setting === 'dark' || (prefersDark && setting !== 'light'))
+    document.documentElement.classList.toggle('dark', true)
+})()</script></head><body><script src="https://code.iconify.design/2/2.1.1/iconify.min.js"></script><script>// Define global variable
+IconifyProviders = {
+  // Empty prefix: overwrite default API provider configuration
+  '': {
+    // Use custom API first, use Iconify public API as backup
+    resources: [
+        'https://api.iconify.design',
+    ],
+    // Wait for 1 second before switching API hosts
+    rotate: 1000,
+  },
+};</script><script defer src="https://fastly.jsdelivr.net/npm/animejs@latest"></script><script defer src="/js/ui/fireworks.js" type="module"></script><canvas class="fireworks"></canvas><div class="container"><a class="sidebar-toggle hty-icon-button" id="menu-btn"><div class="hamburger hamburger--spin" type="button"><span class="hamburger-box"><span class="hamburger-inner"></span></span></div></a><div class="sidebar-toggle sidebar-overlay"></div><aside class="sidebar"><script src="/js/sidebar.js" type="module"></script><ul class="sidebar-nav"><li class="sidebar-nav-item sidebar-nav-toc hty-icon-button sidebar-nav-active" data-target="post-toc-wrap" title="文章目录"><span class="icon iconify" data-icon="ri:list-ordered"></span></li><li class="sidebar-nav-item sidebar-nav-overview hty-icon-button" data-target="site-overview-wrap" title="站点概览"><span class="icon iconify" data-icon="ri:passport-line"></span></li></ul><div class="sidebar-panel" id="site-overview-wrap"><div class="site-info fix-top"><a class="site-author-avatar" href="/about/" title="墨尘"><img width="96" loading="lazy" src="https://vercel.com/api/www/avatar/68bb8c69fc9d5e6baff1eb3eae8cf78cd2b82a0e?s=640" alt="墨尘"></a><div class="site-author-name"><a href="/about/">墨尘</a></div><span class="site-name">InkDust's Blog</span><sub class="site-subtitle"></sub><div class="site-description">这里是墨尘的博客，探索与无限折腾的集合。</div></div><nav class="site-state"><a class="site-state-item hty-icon-button icon-home" href="/" title="首页"><span class="site-state-item-icon"><span class="icon iconify" data-icon="ri:home-4-line"></span></span></a><div class="site-state-item"><a href="/archives/" title="归档"><span class="site-state-item-icon"><span class="icon iconify" data-icon="ri:archive-line"></span></span><span class="site-state-item-count">13</span></a></div><div class="site-state-item"><a href="/categories/" title="分类"><span class="site-state-item-icon"><span class="icon iconify" data-icon="ri:folder-2-line"></span></span><span class="site-state-item-count">7</span></a></div><div class="site-state-item"><a href="/tags/" title="标签"><span class="site-state-item-icon"><span class="icon iconify" data-icon="ri:price-tag-3-line"></span></span><span class="site-state-item-count">38</span></a></div><a class="site-state-item hty-icon-button" target="_blank" rel="noopener" href="https://yun.yunyoujun.cn" title="文档"><span class="site-state-item-icon"><span class="icon iconify" data-icon="ri:settings-line"></span></span></a></nav><hr style="margin-bottom:0.5rem"><hr style="margin:0.5rem 1rem"><div class="links"><a class="links-item hty-icon-button" href="/links/" title="我的小伙伴们" style="color:dodgerblue"><span class="icon iconify" data-icon="ri:genderless-line"></span></a></div><br><a class="links-item hty-icon-button" id="toggle-mode-btn" href="javascript:;" title="Mode" style="color: #f1cb64"><span class="icon iconify" data-icon="ri:contrast-2-line"></span></a></div><div class="sidebar-panel sidebar-panel-active" id="post-toc-wrap"><div class="post-toc"><div class="post-toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="toc-number">1.</span> <span class="toc-text">准备工作</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Cloudflare-%E6%93%8D%E4%BD%9C%E7%AF%87"><span class="toc-number">2.</span> <span class="toc-text">Cloudflare 操作篇</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E7%BA%BF%E8%A7%A3%E6%9E%90DNS-%E6%93%8D%E4%BD%9C"><span class="toc-number">3.</span> <span class="toc-text">分线解析DNS 操作</span></a></li></ol></div></div></div></aside><main class="sidebar-translate" id="content"><div id="post"><article class="hty-card post-block" itemscope itemtype="https://schema.org/Article" style="--smc-primary:#0078E7;"><link itemprop="mainEntityOfPage" href="https://blog.inkdust.top/cloudflare-cname.html"><span hidden itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="墨尘"><meta itemprop="description"></span><span hidden itemprop="publisher" itemscope itemtype="https://schema.org/Organization"><meta itemprop="name" content="InkDust's Blog"></span><header class="post-header"><h1 class="post-title" itemprop="name headline">Cloudflare官方免费CNAME接入及自选IP教程</h1><div class="post-meta"><div class="post-time" style="display:block"><span class="post-meta-item-icon"><span class="icon iconify" data-icon="ri:calendar-line"></span></span> <time title="创建时间：2022-08-05 22:31:46" itemprop="dateCreated datePublished" datetime="2022-08-05T22:31:46+00:00">2022-08-05</time><span class="post-meta-divider">-</span><span class="post-meta-item-icon"><span class="icon iconify" data-icon="ri:calendar-2-line"></span></span> <time title="修改时间：2022-08-25 14:54:56" itemprop="dateModified" datetime="2022-08-25T14:54:56+00:00">2022-08-25</time></div><span class="post-count"><span class="post-symbolcount"><span class="post-meta-item-icon" title="本文字数"><span class="icon iconify" data-icon="ri:file-word-line"></span></span> <span title="本文字数">651</span><span class="post-meta-divider">-</span><span class="post-meta-item-icon" title="阅读时长"><span class="icon iconify" data-icon="ri:timer-line"></span></span> <span title="阅读时长">2m</span></span></span><span class="post-meta-divider">-</span><a href="#comment"><span class="post-meta-item-icon" title="评论数"><span class="icon iconify" data-icon="ri:chat-3-line"></span> <span class="waline-comment-count" id="/cloudflare-cname.html"></span></span></a><div class="post-classify"><span class="post-category"> <span class="post-meta-item-icon" style="margin-right:3px;"><span class="icon iconify" data-icon="ri:folder-line"></span></span><span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a class="category-item" href="/categories/%E6%8A%80%E6%9C%AF%E6%95%99%E7%A8%8B/" style="--text-color:var(--hty-text-color)" itemprop="url" rel="index"><span itemprop="text">技术教程</span></a></span> <span class="post-meta-item-icon" style="margin-right:3px;"><span class="icon iconify" data-icon="ri:folder-line"></span></span><span itemprop="about" itemscope itemtype="https://schema.org/Thing"><a class="category-item" href="/categories/%E5%85%8D%E8%B4%B9%E8%B5%84%E6%BA%90/" style="--text-color:var(--hty-text-color)" itemprop="url" rel="index"><span itemprop="text">免费资源</span></a></span></span><span class="post-tag"><span class="post-meta-divider">-</span><a class="tag-item" href="/tags/Cloudflare/" style="--text-color:var(--hty-text-color)"><span class="post-meta-item-icon"><span class="icon iconify" data-icon="ri:price-tag-3-line"></span></span><span class="tag-name">Cloudflare</span></a><a class="tag-item" href="/tags/%E5%85%8D%E8%B4%B9CDN/" style="--text-color:var(--hty-text-color)"><span class="post-meta-item-icon"><span class="icon iconify" data-icon="ri:price-tag-3-line"></span></span><span class="tag-name">免费CDN</span></a><a class="tag-item" href="/tags/CNAME%E6%8E%A5%E5%85%A5/" style="--text-color:var(--hty-text-color)"><span class="post-meta-item-icon"><span class="icon iconify" data-icon="ri:price-tag-3-line"></span></span><span class="tag-name">CNAME接入</span></a></span></div></div></header><section class="post-body" itemprop="articleBody"><div class="post-content markdown-body"><p>自2021年年末后，Cloudflare禁用了使用 <code>API_KEY</code>自定义CNAME接入 <code>Partner</code>的方式，自选节点IP成为了历史。</p>
+<p>真的没有办法自选IP了</p>
+<p>吗?</p>
+<p>当然是有的，而且是Cloudflare官方提供的CNAME接入，即 <code>Cloudflare for SaaS</code>，我们依旧可以通过该方式来自定义IP节点，并且共享页面规则和WAF防火墙规则。</p>
+<p>下面开始操作。</p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>俗话说:“工欲善其事，必先利其器”，我们需要提前准备好这些东东。</p>
+<ul>
+<li>Cloudflare 账户 一枚</li>
+<li>域名 两个(允许免费的Freenom域名)</li>
+<li>一个支持分线解析的DNS解析平台账号</li>
+</ul>
+<p>以及</p>
+<ul>
+<li>外币信用卡(允许0额度卡和虚拟信用卡) 一张 <code>(不收取任何费用)</code></li>
+</ul>
+<p>或者</p>
+<ul>
+<li>Paypal账号一个</li>
+</ul>
+<h2 id="Cloudflare-操作篇"><a href="#Cloudflare-操作篇" class="headerlink" title="Cloudflare 操作篇"></a>Cloudflare 操作篇</h2><p>1.打开 <code>Cloudflare官网</code>，登录&#x2F;注册账号，添加好你的网站域名并修改 <code>NameServer</code>使其在Cloudflare保持 <code>Active</code>状态。(注意:该域名并不是你访问的域名，而是你通过CNAME接入的地址，所以，你可以直接放心大胆的使用 <code>Freenom</code>域名!</p>
+<p><img src="https://alpha-q3.sourcegcdn.com/2022/08/05/4Co7kmYq.jpg" alt="Cloudfalre接入域名" title="如图，已成功接入域名" loading="lazy"></p>
+<p>接入完成后我们直接打开账户的 <code>付款方式</code>，点击 <code>用户头像</code>，点击 <code>账单</code>-<code>付款信息</code>，在此添加Paypal或信用卡。</p>
+<p>接着订购 <code>CloudFlare for SaaS</code>，进入你的域名，按下图所示操作订购服务，可以看到100个域名的免费额度。</p>
+<p><img src="https://alpha-q3.sourcegcdn.com/2022/08/05/Yd8pDdT3.jpg" alt="购买SaaS" loading="lazy"></p>
+<p>接下来，就是确定源站了。</p>
+<p>添加一个DNS记录，可以是任何记录(A,CNAME,…)。记录名建议为 <code>origin</code>，然后在自定义主机名页面中添加 <code>origin.&lt;YOUR_DOMAIN&gt;</code>，在底下添加你的访问域名，例如 <code>www.example.com</code>。</p>
+<p><img src="https://alpha-q3.sourcegcdn.com/2022/08/05/cnR6Dxmv.png" alt="添加回退源" loading="lazy"></p>
+<p>至此，你已完成了Cloudflare的操作。</p>
+<h2 id="分线解析DNS-操作"><a href="#分线解析DNS-操作" class="headerlink" title="分线解析DNS 操作"></a>分线解析DNS 操作</h2><p>登录支持分线解析的DNS控制台，这里以 <code>DNSPOD</code>为例，添加你的域名，并修改 <code>NameServer</code>，使其变为 <code>正常解析</code>状态。</p>
+<p>添加一个CNAME解析到 <code>origin.&lt;YOUR_DOMAIN&gt;</code>，然后添加Cloudflare证书需要添加的记录。</p>
+<p><img src="https://alpha-q3.sourcegcdn.com/2022/08/05/OGUDjNmj.jpg" alt="添加证书记录" loading="lazy"></p>
+<p>如有记录冲突请自行暂停和删除部分解析。</p>
+<p>待证书状态变为有效后就可以自选IP了。</p>
+<p>例如将 <code>www.example.com</code>的电信运营商解析到 <code>1.1.1.1</code>，就可以添加电信运营商的A记录到 <code>1.1.1.1</code>。</p>
+<p>如下图所示，添加你筛选出的最佳IP:</p>
+<p><img src="https://alpha-q3.sourcegcdn.com/2022/08/05/SyTfud4Q.png" alt="添加最佳IP" loading="lazy"></p>
+<p>然后，访问你的域名，如果能访问的话，恭喜你成功了。</p>
+<p>有什么地方看不懂可以评论区留言哦😊</p>
+<p>本文参考自<a target="_blank" rel="noopener" href="https://luotianyi.vc/6185.html">Luminous&#39; Home-【CloudFlare】官方免费CNAME接入教程</a>。</p>
+</div></section><div id="reward-container"><span class="hty-icon-button button-glow" id="reward-button" title="打赏" onclick="var qr = document.getElementById(&quot;qr&quot;); qr.style.display = (qr.style.display === &quot;none&quot;) ? &quot;block&quot; : &quot;none&quot;;"><span class="icon iconify" data-icon="ri:hand-coin-line"></span></span><div id="reward-comment">I'm so cute. Please give me money.</div></div><ul class="post-copyright"><li class="post-copyright-author"><strong>本文作者：</strong>墨尘</li><li class="post-copyright-link"><strong>本文链接：</strong><a href="https://blog.inkdust.top/cloudflare-cname.html" title="Cloudflare官方免费CNAME接入及自选IP教程">https://blog.inkdust.top/cloudflare-cname.html</a></li><li class="post-copyright-license"><strong>版权声明：</strong>本博客所有文章除特别声明外，均默认采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank" rel="noopener" title="CC BY-NC-SA 4.0 "><span class="icon iconify" data-icon="ri:creative-commons-line"></span><span class="icon iconify" data-icon="ri:creative-commons-by-line"></span><span class="icon iconify" data-icon="ri:creative-commons-nc-line"></span><span class="icon iconify" data-icon="ri:creative-commons-sa-line"></span></a> 许可协议。</li></ul></article><div class="post-nav"><div class="post-nav-item"><a class="post-nav-prev" href="/termux-old.html" rel="prev" title="Termux安卓5/6版本的可用镜像源"><span class="icon iconify" data-icon="ri:arrow-left-s-line"></span><span class="post-nav-text">Termux安卓5/6版本的可用镜像源</span></a></div><div class="post-nav-item"><a class="post-nav-next" href="/github-speed-up.html" rel="next" title="Github速度太慢?5种方法让速度起飞!"><span class="post-nav-text">Github速度太慢?5种方法让速度起飞!</span><span class="icon iconify" data-icon="ri:arrow-right-s-line"></span></a></div></div></div><div class="hty-card" id="comment"><div id="waline"></div><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@waline/client@v2/dist/waline.css"><script>window.CONFIG.waline.config.path = "/cloudflare-cname.html"</script><div class="js-Pjax"><script src="/js/comments/waline.js" type="module" defer></script></div></div></main><footer class="sidebar-translate" id="footer"><div class="copyright"><span>&copy; 2019 – 2023 </span><span class="with-love" id="animate"><span class="icon iconify" data-icon="ri:cloud-line"></span></span><span class="author"> 墨尘</span></div><div class="powered"><span>由 <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> 驱动 v6.2.0</span><span class="footer-separator">|</span><span>主题 - <a rel="noopener" href="https://github.com/YunYouJun/hexo-theme-yun" target="_blank"><span>Yun</span></a> v1.10.9</span></div></footer></div><a class="hty-icon-button" id="back-to-top" aria-label="back-to-top" href="#"><span class="icon iconify" data-icon="ri:arrow-up-s-line"></span><svg class="progress-circle-container" viewBox="0 0 100 100"><circle class="progress-circle" id="progressCircle" cx="50" cy="50" r="48" fill="none" stroke="#0078E7" stroke-width="2" stroke-linecap="round"></circle></svg></a><a class="popup-trigger hty-icon-button icon-search" id="search" href="javascript:;" title="搜索"><span class="site-state-item-icon"><span class="icon iconify" data-icon="ri:search-line"></span></span></a><script>window.addEventListener("DOMContentLoaded", () => {
+  // Handle and trigger popup window
+  document.querySelector(".popup-trigger").addEventListener("click", () => {
+    document.querySelector(".popup").classList.add("show");
+    setTimeout(() => {
+      document.querySelector(".search-input").focus();
+    }, 100);
+  });
+
+  // Monitor main search box
+  const onPopupClose = () => {
+    document.querySelector(".popup").classList.remove("show");
+  };
+
+  document.querySelector(".popup-btn-close").addEventListener("click", () => {
+    onPopupClose();
+  });
+
+  window.addEventListener("keyup", event => {
+    if (event.key === "Escape") {
+      onPopupClose();
+    }
+  });
+});
+</script><script src="https://fastly.jsdelivr.net/npm/hexo-generator-searchdb@1.4.0/dist/search.js"></script><script src="/js/search/local-search.js" defer type="module"></script><div class="popup search-popup"><div class="search-header"><span class="popup-btn-close close-icon hty-icon-button"><span class="icon iconify" data-icon="ri:close-line"></span></span></div><div class="search-input-container"><input class="search-input" id="local-search-input" type="text" placeholder="搜索..." value=""></div><div class="search-result-container"></div></div></body></html>
